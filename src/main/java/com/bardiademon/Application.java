@@ -23,7 +23,7 @@ import org.apache.logging.log4j.Logger;
 import org.reflections.Reflections;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.Set;
 
 public final class Application extends AbstractVerticle {
 
