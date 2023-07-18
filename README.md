@@ -37,6 +37,8 @@ public @interface Rest {
     Class<?> dto() default NothingDto.class;
 
     Class<?>[] validator() default {};
+
+    boolean authentication() default false;
 }
 ```
 
