@@ -6,9 +6,12 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 @SuperBuilder
-@Setter
 @Getter
+@Setter
 @ToString
-public class IdEntity {
-    protected long id;
+public final class UserEntity extends BaseEntity {
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String password;
 }

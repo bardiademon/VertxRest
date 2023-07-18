@@ -11,6 +11,8 @@ public enum Response {
     TEST(HttpResponseStatus.OK.code() , "This is a test message"),
     INVALID_NAME(HttpResponseStatus.BAD_REQUEST.code() , "This name is invalid"),
     RESPONSE_NOT_FOUND(HttpResponseStatus.NOT_FOUND.code() , "This path not found"),
+    FAIL_AUTHENTICATION(HttpResponseStatus.UNAUTHORIZED.code() , "Unauthorized access to the requested resource requires authentication"),
+    USER_NOT_FOUND(HttpResponseStatus.BAD_REQUEST.code() , "This user not found"),
     //
     ;
     private final static Logger logger = LogManager.getLogger(Response.class);

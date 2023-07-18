@@ -11,9 +11,14 @@ import com.bardiademon.rest.ResponseNotFound;
 import com.bardiademon.utils.DbConnection;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
+import io.vertx.ext.auth.PubSecKeyOptions;
+import io.vertx.ext.auth.jwt.JWTAuth;
+import io.vertx.ext.auth.jwt.JWTAuthOptions;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -23,12 +28,14 @@ import org.apache.logging.log4j.Logger;
 import org.reflections.Reflections;
 
 import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
 import java.util.Set;
 
 public final class Application extends AbstractVerticle {
 
     private final static Logger logger = LogManager.getLogger(Application.class);
     private static Config config;
+    public static JWTAuth jwt;
 
     public static void main(final String[] args) {
         logger.info("bardiademon");
@@ -48,55 +55,59 @@ public final class Application extends AbstractVerticle {
         logger.info("Server starting...");
 
         final ConfigRetriever configRetriever = ConfigRetriever.create(vertx);
-        configRetriever.getConfig()
-                .onSuccess(e ->
-                {
-                    logger.info("Successfully get config: {}" , e);
-                    config = ConfigMapper.jsonConfigToClassConfig(e);
-                    logger.info("Successfully mapped config json file: {}" , config);
+        configRetriever.getConfig().onSuccess(e ->
+        {
+            logger.info("Successfully get config: {}" , e);
+            config = ConfigMapper.jsonConfigToClassConfig(e);
+            logger.info("Successfully mapped config json file: {}" , config);
 
-                    DbConnection.connect(vertx)
-                            .onSuccess(sqlConnection ->
-                            {
-                                logger.info("Successfully connected to database: {}" , config.dbConfig());
+            jwtConfig().onSuccess(jwtAuth -> {
 
-                                final HttpServer httpServer = vertx.createHttpServer();
-                                final Router router = Router.router(vertx);
-                                routerHandler(router);
-                                httpServer.requestHandler(router);
+                logger.info("Successfully jwt config: {}" , jwtAuth);
+                Application.jwt = jwtAuth;
 
-                                final ServerConfig serverConfig = config.serverConfig();
-                                logger.info("Listing server: {}" , serverConfig);
+                DbConnection.connect(vertx).onSuccess(sqlConnection -> {
+                    logger.info("Successfully connected to database: {}" , config.dbConfig());
 
-                                final String host = serverConfig.host();
-                                final int port = serverConfig.port();
+                    final HttpServer httpServer = vertx.createHttpServer();
+                    final Router router = Router.router(vertx);
+                    routerHandler(router);
+                    httpServer.requestHandler(router);
 
-                                httpServer.listen(port , host)
-                                        .onSuccess(successListen -> {
-                                            logger.info("Server run on {}:{}" , host , port);
-                                            serverReady();
-                                            startPromise.complete();
-                                        })
-                                        .onFailure(fail -> {
-                                            logger.error("Fail to run server on {}:{}" , host , port , fail);
-                                            startPromise.fail(fail);
-                                        });
+                    final ServerConfig serverConfig = config.serverConfig();
+                    logger.info("Listing server: {}" , serverConfig);
+
+                    final String host = serverConfig.host();
+                    final int port = serverConfig.port();
+
+                    httpServer.listen(port , host)
+                            .onSuccess(successListen -> {
+                                logger.info("Server run on {}:{}" , host , port);
+                                serverReady();
+                                startPromise.complete();
                             })
                             .onFailure(fail -> {
-                                logger.error("Fail to connect database" , fail);
+                                logger.error("Fail to run server on {}:{}" , host , port , fail);
                                 startPromise.fail(fail);
                             });
-
-                })
-                .onFailure(fail -> {
-                    logger.error("Fail to get config" , fail);
+                }).onFailure(fail -> {
+                    logger.error("Fail to connect database" , fail);
                     startPromise.fail(fail);
                 });
+            }).onFailure(fail -> {
+                logger.error("Fail to jwt config" , fail);
+                startPromise.fail(fail);
+            });
+
+
+        }).onFailure(fail -> {
+            logger.error("Fail to get config" , fail);
+            startPromise.fail(fail);
+        });
     }
 
     private void routerHandler(final Router router) {
         try {
-
             router.route().handler(BodyHandler.create());
 
             if (config.serverConfig().statik().enable()) {
@@ -143,5 +154,25 @@ public final class Application extends AbstractVerticle {
 
     public static Config getConfig() {
         return config;
+    }
+
+    private Future<JWTAuth> jwtConfig() {
+
+        final Promise<JWTAuth> promise = Promise.promise();
+
+        final URL resource = getResource("pem/private_key.pem");
+        if (resource != null) {
+            final Buffer privateKey = vertx.fileSystem().readFileBlocking(resource.getFile());
+
+            final JWTAuth jwt = JWTAuth.create(vertx , new JWTAuthOptions().addPubSecKey(new PubSecKeyOptions().setAlgorithm("HS256")
+                    .setBuffer(privateKey)));
+            promise.complete(jwt);
+        } else promise.fail(new Exception("Jwt config error"));
+
+        return promise.future();
+    }
+
+    public static URL getResource(final String path) {
+        return Thread.currentThread().getContextClassLoader().getResource(path);
     }
 }

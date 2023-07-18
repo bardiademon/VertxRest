@@ -1,11 +1,15 @@
 package com.bardiademon.controller;
 
+import com.bardiademon.Application;
 import com.bardiademon.data.Model.ServerResponse;
 import com.bardiademon.data.dto.NothingDto;
+import com.bardiademon.data.entity.UserEntity;
 import com.bardiademon.data.enums.Response;
 import com.bardiademon.data.excp.ResponseException;
 import com.bardiademon.data.mapper.DtoMapper;
+import com.bardiademon.data.repository.UserRepository;
 import com.bardiademon.data.validation.Validation;
+import com.bardiademon.service.UserService;
 import com.bardiademon.utils.DbConnection;
 import com.bardiademon.utils.RemoveUploadedFile;
 import io.vertx.core.*;
@@ -24,12 +28,14 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
     private final Rest rest;
     private SQLConnection sqlConnection;
     private REQUEST request;
-
+    private final UserRepository userRepository;
     private Promise<Void> promise;
+    private UserEntity userEntity;
 
     private RouterController(final RoutingContext routingContext , final RestController<REQUEST, RESPONSE> routerRestController , final Rest rest) {
         this.routingContext = routingContext;
         this.routerRestController = routerRestController;
+        userRepository = new UserService();
         this.rest = rest;
     }
 
@@ -64,11 +70,34 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
                 logger.error("Fail to handler" , e);
                 serverError();
             }
+        }).onFailure(fail -> {
+            logger.error("Fail to request handler");
+            fail(fail);
         });
 
     }
 
     private Future<Void> requestHandler() {
+        final Promise<Void> promise = Promise.promise();
+
+        Future.all(authentication() , body()).onSuccess(success -> {
+
+            logger.info("Successfully authentication: {}" , userEntity);
+            logger.info("Successfully body");
+
+            promise.complete();
+
+        }).onFailure(fail -> {
+            logger.error("Fail to [authentication,body]" , fail);
+            promise.fail(fail);
+        });
+
+        return promise.future();
+    }
+
+
+    private Future<Void> body() {
+
         final Promise<Void> promise = Promise.promise();
 
         if (rest.dto() == null || rest.dto().getName().equals(NothingDto.class.getName())) {
@@ -131,6 +160,66 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
         return promise.future();
     }
 
+    private Future<Void> authentication() {
+        final Promise<Void> promise = Promise.promise();
+
+        if (!rest.authentication()) {
+            logger.warn("authentication is disable");
+            promise.complete();
+            return promise.future();
+        }
+
+        if (!rest.db() || sqlConnection == null) {
+            logger.error("Fail to authentication");
+            promise.fail(new ResponseException(Response.FAIL_AUTHENTICATION));
+            return promise.future();
+        }
+
+        final String authentication = routingContext.request().getHeader("authentication");
+
+        if (authentication == null || authentication.trim().isEmpty()) {
+            promise.fail(new ResponseException(Response.FAIL_AUTHENTICATION));
+            return promise.future();
+        }
+
+        final String[] authenticationSplit = authentication.trim().split(" ");
+        if (authenticationSplit.length != 2 || !authenticationSplit[0].equals("Bearer") || authenticationSplit[1] == null || authenticationSplit[1].trim().isEmpty()) {
+            promise.fail(new ResponseException(Response.FAIL_AUTHENTICATION));
+            return promise.future();
+        }
+
+        final String token = authenticationSplit[1].trim();
+        Application.jwt.authenticate(new JsonObject().put("token" , token)).onSuccess(user -> {
+
+            try {
+                logger.info("Successfully authenticate: {}" , user);
+
+                final long id = Long.parseLong(user.get("user_id").toString());
+
+                userRepository.fetchUserById(sqlConnection , id).onSuccess(userEntity -> {
+
+                    logger.info("Successfully fetch user by id: {}" , userEntity);
+                    this.userEntity = userEntity;
+                    promise.complete();
+
+                }).onFailure(fail -> {
+                    logger.error("Fail to fetch user by id: {}" , user , fail);
+                    promise.fail(new ResponseException(Response.FAIL_AUTHENTICATION));
+                });
+
+            } catch (Exception e) {
+                logger.error("Fail to authenticate: {}" , token , e);
+                promise.fail(new ResponseException(Response.FAIL_AUTHENTICATION));
+            }
+
+        }).onFailure(fail -> {
+            logger.error("Fail to authenticate: {}" , token , fail);
+            promise.fail(new ResponseException(Response.FAIL_AUTHENTICATION));
+        });
+
+        return promise.future();
+    }
+
     private void serverError() {
         fail(new ServerResponse<>(Response.SERVER_ERROR));
     }
@@ -184,6 +273,11 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
     }
 
     @Override
+    public void fail(final Throwable throwable) {
+        complete(true , throwable , null);
+    }
+
+    @Override
     public void success(final ServerResponse<RESPONSE> response) {
         complete(false , null , response);
     }
@@ -209,11 +303,16 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
     }
 
     @Override
+    public void success(RESPONSE info) {
+        complete(false , null , new ServerResponse<>(info , Response.SUCCESSFULLY));
+    }
+
+    @Override
     public void success(Response response) {
         complete(false , null , new ServerResponse<>(response));
     }
 
-    private void complete(final boolean fail , final Throwable throwable , final ServerResponse<RESPONSE> response) {
+    private void complete(final boolean fail , final Throwable throwable , final ServerResponse<RESPONSE> serverResponse) {
         logger.info("Result router starting...");
 
         if (fail) {
@@ -222,24 +321,31 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
             DbConnection.rollback(sqlConnection);
             RemoveUploadedFile.remove(routingContext);
 
-            if (response == null) {
+            if (serverResponse == null) {
                 logger.error("Response message message is null" , throwable);
-                ResponseHandler.response(routingContext , Response.SERVER_ERROR);
+
+                try {
+                    ResponseHandler.response(routingContext , Response.valueOf(throwable.getMessage()));
+                } catch (Exception e) {
+                    logger.error("Fail throwable message to response value" , throwable);
+                    ResponseHandler.response(routingContext , Response.SERVER_ERROR);
+                }
+
+                promise.fail(throwable);
                 return;
             }
 
-            ResponseHandler.response(routingContext , response.getResponse());
+            ResponseHandler.response(routingContext , serverResponse.getResponse());
 
             promise.fail(throwable);
-
             return;
         }
 
-        logger.info("Successfully router: {}" , response);
+        logger.info("Successfully router: {}" , serverResponse);
 
         final ResponseHandler<RESPONSE> responseHandler = ResponseHandler.response(routingContext);
-        if (response.getInfo() != null) responseHandler.setInfo(response.getInfo());
-        responseHandler.setResponse(response.getResponse());
+        if (serverResponse.getInfo() != null) responseHandler.setInfo(serverResponse.getInfo());
+        responseHandler.setResponse(serverResponse.getResponse());
         responseHandler.apply();
 
         DbConnection.commitClose(sqlConnection);
@@ -264,6 +370,11 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
     @Override
     public SQLConnection sqlConnection() {
         return sqlConnection;
+    }
+
+    @Override
+    public UserEntity user() {
+        return userEntity;
     }
 
 
