@@ -65,6 +65,7 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
     private void handle() {
         requestHandler().onSuccess(voidAsyncResult -> {
             try {
+                logger.info("Starting rest controller, Class: {} , Request: {}" , routerRestController.getClass().getName() , request);
                 routerRestController.handler(this);
             } catch (Exception e) {
                 logger.error("Fail to handler" , e);

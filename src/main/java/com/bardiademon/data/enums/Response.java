@@ -13,6 +13,8 @@ public enum Response {
     RESPONSE_NOT_FOUND(HttpResponseStatus.NOT_FOUND.code() , "This path not found"),
     FAIL_AUTHENTICATION(HttpResponseStatus.UNAUTHORIZED.code() , "Unauthorized access to the requested resource requires authentication"),
     USER_NOT_FOUND(HttpResponseStatus.BAD_REQUEST.code() , "This user not found"),
+    INVALID_EMAIL(HttpResponseStatus.BAD_REQUEST.code() , "This email is invalid"),
+    INVALID_PASSWORD(HttpResponseStatus.BAD_REQUEST.code() , "This password is invalid"),
     //
     ;
     private final static Logger logger = LogManager.getLogger(Response.class);
