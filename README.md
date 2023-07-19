@@ -37,6 +37,8 @@ public @interface Rest {
     Class<?> dto() default NothingDto.class;
 
     Class<?>[] validator() default {};
+
+    boolean authentication() default false;
 }
 ```
 
@@ -68,6 +70,8 @@ public abstract class RestController<REQUEST, RESPONSE> {
 public interface Handler<REQUEST, RESPONSE> {
     void fail(final Throwable throwable , final ServerResponse<RESPONSE> response);
 
+    void fail(final Throwable throwable);
+
     void fail(final Throwable throwable , final RESPONSE info , final Response response);
 
     void fail(final ServerResponse<RESPONSE> response);
@@ -80,6 +84,8 @@ public interface Handler<REQUEST, RESPONSE> {
 
     void success(final RESPONSE info , final Response response);
 
+    void success(final RESPONSE info);
+
     void success(final Response response);
 
     REQUEST request();
@@ -89,6 +95,8 @@ public interface Handler<REQUEST, RESPONSE> {
     Vertx vertx();
 
     SQLConnection sqlConnection();
+
+    UserEntity user();
 }
 ```
 
