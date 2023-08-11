@@ -10,9 +10,9 @@ import com.bardiademon.data.enums.UserRole;
 import com.bardiademon.data.validation.TestValidation;
 
 @Rest(method = RequestMethod.POST, path = {"/tst" , "/test"}, db = false, dto = TestDto.class, validator = TestValidation.class)
-public final class TestRest extends RestController<TestDto, String> {
+public final class TestRest extends RestController<TestDto, TestDto> {
     @Override
-    public void handler(final Handler<TestDto, String> handler) throws Exception {
-        handler.success(Response.TEST);
+    public void handler(final Handler<TestDto, TestDto> handler) throws Exception {
+        handler.success(handler.request() , Response.TEST);
     }
 }

@@ -17,5 +17,11 @@
     "password": "7348",
     "driver_class": "org.postgresql.Driver",
     "url": "jdbc:postgresql://127.0.0.1:5432/vertx_rest"
+  },
+  "response_header": {
+    "X-Programmer": "bardiademon",
+    "X-Programming-Language": "Java",
+    "X-Powered-By": "Vert.x",
+    "X-Contact-Info": "https://bardiademon.com"
   }
 }

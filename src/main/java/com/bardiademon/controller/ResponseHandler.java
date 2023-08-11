@@ -1,7 +1,9 @@
 package com.bardiademon.controller;
 
-import com.bardiademon.data.dto.NothingDto;
+import com.bardiademon.Application;
 import com.bardiademon.data.enums.Response;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -17,6 +19,8 @@ import org.apache.logging.log4j.Logger;
 public final class ResponseHandler<T> {
 
     private final static Logger logger = LogManager.getLogger(ResponseHandler.class);
+
+    private static final Gson GSON = new Gson();
 
     private final HttpServerResponse httpServerResponse;
 
@@ -49,13 +53,35 @@ public final class ResponseHandler<T> {
         final JsonObject response = new JsonObject()
                 .put("code" , this.response.name())
                 .put("message" , this.response.message)
-                .put("info" , info instanceof NothingDto ? null : info);
+                .put("info" , info());
 
+        logger.trace("Response: {}" , response);
+
+        Application.getConfig().responseHeader().keySet().forEach(key -> httpServerResponse.headers().add(key , Application.getConfig().responseHeader().get(key).getAsString()));
         httpServerResponse.headers().add("Content-Type" , "application/json");
-        httpServerResponse.headers().add("Content-Length" , String.valueOf(response.toString().length()));
+        httpServerResponse.headers().add("Content-Length" , String.valueOf(response.encode().length()));
 
-        httpServerResponse.write(response.toString());
+        httpServerResponse.write(response.encode());
         httpServerResponse.end();
         httpServerResponse.close();
+    }
+
+    private Object info() {
+        try {
+
+            if (info instanceof String || info instanceof Short || info instanceof Integer || info instanceof Long || info instanceof Float || info instanceof Double) {
+                return info;
+            }
+
+            if (info instanceof JsonObject || info instanceof JsonArray) {
+                return info;
+            }
+
+            return new JsonObject(GSON.toJson(info));
+
+        } catch (Exception e) {
+            logger.error("Fail to info: {}" , info);
+        }
+        return null;
     }
 }
