@@ -38,7 +38,7 @@ public final class Application extends AbstractVerticle {
     public static JWTAuth jwt;
 
     public static void main(final String[] args) {
-        logger.info("bardiademon");
+        logger.info("Powered by [Java,Vertx,bardiademon]");
 
         Vertx.vertx().deployVerticle(Application.class.getName())
                 .onSuccess(success -> logger.info("Successfully server: {}" , success))

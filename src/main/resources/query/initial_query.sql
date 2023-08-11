@@ -22,7 +22,16 @@ create table if not exists "users"
     primary key ("id")
 ) inherits ("base");
 
+create table if not exists "users_roles"
+(
+    "user_id" bigint      not null,
+    "role"    varchar(50) not null,
+    primary key ("id"),
+    foreign key ("user_id") references "users" ("id")
+) inherits ("id");
 
 insert into "users" ("first_name", "last_name", "email", "password")
 VALUES ('Bardia', 'Namjoo', 'bardiademon@gmail.com', '123456');
+insert into "users_roles" ("user_id", "role")
+VALUES ((select "id" from "users" where "email" = 'bardiademon@gmail.com'), 'BARDIADEMON');
 

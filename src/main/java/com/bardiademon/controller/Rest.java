@@ -2,7 +2,9 @@ package com.bardiademon.controller;
 
 import com.bardiademon.data.dto.NothingDto;
 import com.bardiademon.data.enums.RequestMethod;
+import com.bardiademon.data.enums.UserRole;
 
+import javax.management.relation.Role;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -26,4 +28,6 @@ public @interface Rest {
     Class<?>[] validator() default {};
 
     boolean authentication() default false;
+
+    UserRole[] roles() default UserRole.ANY;
 }

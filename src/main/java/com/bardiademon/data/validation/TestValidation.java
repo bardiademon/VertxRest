@@ -7,8 +7,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public final class TestValidation extends Validation<TestDto> {
-    private final static Logger logger = LogManager.getLogger(TestValidation.class);
-
     public TestValidation() {
     }
 

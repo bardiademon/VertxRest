@@ -2,6 +2,7 @@ package com.bardiademon.service;
 
 import com.bardiademon.data.entity.UserEntity;
 import com.bardiademon.data.enums.Response;
+import com.bardiademon.data.enums.UserRole;
 import com.bardiademon.data.excp.ResponseException;
 import com.bardiademon.data.mapper.UserMapper;
 import com.bardiademon.data.repository.UserRepository;
@@ -12,6 +13,9 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.sql.SQLConnection;
 
+import java.util.List;
+import java.util.Set;
+
 public final class UserService extends Service implements UserRepository {
 
     @Override
@@ -19,7 +23,20 @@ public final class UserService extends Service implements UserRepository {
         final Promise<UserEntity> promise = Promise.promise();
 
         final String query = """
-                select "id","first_name","last_name","email","created_at","deleted_at","updated_at","deleted","description" from "users" where "deleted" = false and "id" = ?
+                      select 
+                             "user"."id",
+                             "user"."first_name",
+                             "user"."last_name",
+                             "user"."email",
+                             "user"."created_at",
+                             "user"."deleted_at",
+                             "user"."updated_at",
+                             "user"."deleted",
+                             "user"."description",
+                             (select json_agg("user_rol"."role")  from "users_roles" as "user_rol" where "user_rol"."user_id" = "user"."id") as "roles"
+                      from "users" as "user"
+                      where "deleted" = false
+                        and "id" = ? 
                 """;
 
         final JsonArray params = new JsonArray()
@@ -34,7 +51,7 @@ public final class UserService extends Service implements UserRepository {
                 return;
             }
 
-            if (RepositoryUtil.isEmptySelect(resultHandler)) {
+            if (isEmptySelect(resultHandler)) {
                 logger.error("Not found user, UserId: {}" , userId);
                 promise.fail(new ResponseException(Response.USER_NOT_FOUND));
                 return;
@@ -42,7 +59,7 @@ public final class UserService extends Service implements UserRepository {
 
             final JsonObject row = resultHandler.result().getRows().get(0);
 
-            logger.info("Successfully fetch user by id: {}" , row);
+            logger.trace("Successfully fetch user by id: {}" , row);
 
             final UserEntity userEntity = UserMapper.toUserEntity(row);
             if (userEntity == null) {
@@ -63,8 +80,22 @@ public final class UserService extends Service implements UserRepository {
         final Promise<UserEntity> promise = Promise.promise();
 
         final String query = """
-                select "id","first_name","last_name","email","created_at","deleted_at","updated_at","deleted","description" from "users" where "deleted" = false and "email" = ? and "password" = ?
-                """;
+                 select 
+                       "user"."id",
+                       "user"."first_name",
+                       "user"."last_name",
+                       "user"."email",
+                       "user"."created_at",
+                       "user"."deleted_at",
+                       "user"."updated_at",
+                       "user"."deleted",
+                       "user"."description",
+                       (select json_agg("user_rol"."role")  from "users_roles" as "user_rol" where "user_rol"."user_id" = "user"."id") as "roles"
+                from "users" as "user"
+                where "deleted" = false
+                  and "email" = ?
+                  and "password" = ?
+                 """;
 
         final JsonArray params = new JsonArray()
                 .add(email)
@@ -79,7 +110,7 @@ public final class UserService extends Service implements UserRepository {
                 return;
             }
 
-            if (RepositoryUtil.isEmptySelect(resultHandler)) {
+            if (isEmptySelect(resultHandler)) {
                 logger.error("Not found user, email[{}] and password[{}]" , email , password);
                 promise.fail(new ResponseException(Response.USER_NOT_FOUND));
                 return;
@@ -87,7 +118,7 @@ public final class UserService extends Service implements UserRepository {
 
             final JsonObject row = resultHandler.result().getRows().get(0);
 
-            logger.info("Successfully fetch user by email[{}] , Result: {}" , email , row);
+            logger.trace("Successfully fetch user by email[{}] , Result: {}" , email , row);
 
             final UserEntity userEntity = UserMapper.toUserEntity(row);
             if (userEntity == null) {

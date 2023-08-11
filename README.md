@@ -1,10 +1,10 @@
 # VertxRest
 
-This is the repository for Vert.x rest.
+## This is the repository for Vert.x rest.
 
-Vert.x Rest for convenience in rest api programming
+### Vert.x Rest for convenience in rest api programming
 
-## How use
+# How use
 
 ```java
 
@@ -39,10 +39,12 @@ public @interface Rest {
     Class<?>[] validator() default {};
 
     boolean authentication() default false;
+
+    UserRole[] roles() default UserRole.ANY;
 }
 ```
 
-### Rest Specifies that the class is a Rest
+## Rest Specifies that the class is a Rest
 
 + method: Specifies the request method
 + path: Specifies the route
@@ -51,6 +53,8 @@ public @interface Rest {
 + db: Determines whether this Rest requires a database connection or not
 + dto: Defines the input Dto class
 + validator: It defines the classes that are used to validate the DTO
++ authentication: Checking the user login with the token created from sign-in rest
++ roles: If authentication is enabled, this item is checked and the access level is determined
 
 ### RestController
 
@@ -116,7 +120,7 @@ public interface Handler<REQUEST, RESPONSE> {
 If you want to say thank you:
 
 - Add a GitHub Star to the project!
-- Follow my github [bardiademon](https://github.com/bardiademon)
+- Follow my GitHub [bardiademon](https://github.com/bardiademon)
 
 <h1 align="center">
     ⚠️ License & 📝 Credits

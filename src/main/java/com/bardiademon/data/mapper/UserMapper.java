@@ -2,9 +2,13 @@ package com.bardiademon.data.mapper;
 
 import com.bardiademon.data.entity.BaseEntity;
 import com.bardiademon.data.entity.UserEntity;
+import com.bardiademon.data.enums.UserRole;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.HashSet;
 
 public final class UserMapper {
 
@@ -15,6 +19,8 @@ public final class UserMapper {
 
     public static UserEntity toUserEntity(final JsonObject row) {
         try {
+
+            logger.trace("Starting mapping Row to user entity, Row: {}" , row);
 
             final BaseEntity baseEntity = BaseMapper.toBaseEntity(row);
 
@@ -30,6 +36,7 @@ public final class UserMapper {
                     .deleted(baseEntity.isDeleted())
                     .deletedAt(baseEntity.getDeletedAt())
                     .description(baseEntity.getDescription())
+                    .userRoles(row.getValue("roles") == null ? null : new HashSet<>(new JsonArray(row.getString("roles")).stream().map(item -> UserRole.valueOf(item.toString())).toList()))
                     .build();
 
         } catch (Exception e) {

@@ -5,8 +5,9 @@ import com.bardiademon.controller.Rest;
 import com.bardiademon.controller.RestController;
 import com.bardiademon.data.dto.NothingDto;
 import com.bardiademon.data.enums.RequestMethod;
+import com.bardiademon.data.enums.UserRole;
 
-@Rest(method = RequestMethod.POST, path = "/authentication", authentication = true)
+@Rest(method = RequestMethod.POST, path = "/authentication", authentication = true, roles = UserRole.ADMIN)
 public class TestAuthentication extends RestController<NothingDto, String> {
     @Override
     public void handler(final Handler<NothingDto, String> handler) throws Exception {

@@ -12,6 +12,7 @@ public enum Response {
     INVALID_NAME(HttpResponseStatus.BAD_REQUEST.code() , "This name is invalid"),
     RESPONSE_NOT_FOUND(HttpResponseStatus.NOT_FOUND.code() , "This path not found"),
     FAIL_AUTHENTICATION(HttpResponseStatus.UNAUTHORIZED.code() , "Unauthorized access to the requested resource requires authentication"),
+    ACCESS_DENIED(HttpResponseStatus.FORBIDDEN.code() , "You do not have permission to access this resource"),
     USER_NOT_FOUND(HttpResponseStatus.BAD_REQUEST.code() , "This user not found"),
     INVALID_EMAIL(HttpResponseStatus.BAD_REQUEST.code() , "This email is invalid"),
     INVALID_PASSWORD(HttpResponseStatus.BAD_REQUEST.code() , "This password is invalid"),

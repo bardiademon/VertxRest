@@ -6,6 +6,7 @@ import com.bardiademon.controller.Rest;
 import com.bardiademon.data.dto.TestDto;
 import com.bardiademon.data.enums.RequestMethod;
 import com.bardiademon.data.enums.Response;
+import com.bardiademon.data.enums.UserRole;
 import com.bardiademon.data.validation.TestValidation;
 
 @Rest(method = RequestMethod.POST, path = {"/tst" , "/test"}, db = false, dto = TestDto.class, validator = TestValidation.class)

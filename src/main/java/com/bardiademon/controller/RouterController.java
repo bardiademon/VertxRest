@@ -5,6 +5,7 @@ import com.bardiademon.data.Model.ServerResponse;
 import com.bardiademon.data.dto.NothingDto;
 import com.bardiademon.data.entity.UserEntity;
 import com.bardiademon.data.enums.Response;
+import com.bardiademon.data.enums.UserRole;
 import com.bardiademon.data.excp.ResponseException;
 import com.bardiademon.data.mapper.DtoMapper;
 import com.bardiademon.data.repository.UserRepository;
@@ -19,6 +20,9 @@ import io.vertx.ext.web.RequestBody;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Arrays;
+import java.util.Set;
 
 public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle implements Handler<REQUEST, RESPONSE> {
 
@@ -65,7 +69,7 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
     private void handle() {
         requestHandler().onSuccess(voidAsyncResult -> {
             try {
-                logger.info("Starting rest controller, Class: {} , Request: {}" , routerRestController.getClass().getName() , request);
+                logger.trace("Starting rest controller, Class: {} , Request: {}" , routerRestController.getClass().getName() , request);
                 routerRestController.handler(this);
             } catch (Exception e) {
                 logger.error("Fail to handler" , e);
@@ -83,8 +87,8 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
 
         Future.all(authentication() , body()).onSuccess(success -> {
 
-            logger.info("Successfully authentication: {}" , userEntity);
-            logger.info("Successfully body");
+            logger.trace("Successfully authentication: {}" , userEntity);
+            logger.trace("Successfully body");
 
             promise.complete();
 
@@ -122,7 +126,7 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
                         bodyJson = new JsonObject(body.asString());
 
                         request = (REQUEST) DtoMapper.toDto(bodyJson , rest.dto());
-                        logger.info("Successfully mapping request: {}" , request);
+                        logger.trace("Successfully mapping request: {}" , request);
 
                         final Class<?>[] validator = rest.validator();
                         if (validator != null && validator.length > 0) {
@@ -200,6 +204,18 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
                 userRepository.fetchUserById(sqlConnection , id).onSuccess(userEntity -> {
 
                     logger.info("Successfully fetch user by id: {}" , userEntity);
+
+                    final Set<UserRole> userRoles = userEntity.getUserRoles();
+                    if (rest.roles() != null && rest.roles().length > 0 && !Arrays.asList(rest.roles()).contains(UserRole.ANY)
+                            && (userRoles == null || userRoles.isEmpty() || userRoles.stream().noneMatch(item -> UserRole.admins().contains(item) || Arrays.asList(rest.roles()).contains(item)))
+                    ) {
+                        logger.error("Access denied -> Rest: {}, User: {}" , rest , userEntity);
+                        promise.fail(new ResponseException(Response.ACCESS_DENIED));
+                        return;
+                    }
+
+                    logger.trace("Access was successfully granted: RestRoles: {} , UserRoles: {}" , rest.roles() , userEntity.getUserRoles());
+
                     this.userEntity = userEntity;
                     promise.complete();
 
@@ -245,13 +261,13 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
     }
 
     private Future<SQLConnection> connectDbResponse() {
-        logger.info("starting connect db response");
+        logger.info("Starting connect db response");
 
         final Promise<SQLConnection> promise = Promise.promise();
 
         DbConnection.connect(vertx)
                 .onSuccess(sqlConnection -> {
-                    logger.info("Successfully connect to database");
+                    logger.trace("Successfully connect to database");
                     promise.complete(sqlConnection);
                 })
                 .onFailure(fail -> {
@@ -342,7 +358,7 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
             return;
         }
 
-        logger.info("Successfully router: {}" , serverResponse);
+        logger.trace("Successfully router: {}" , serverResponse);
 
         final ResponseHandler<RESPONSE> responseHandler = ResponseHandler.response(routingContext);
         if (serverResponse.getInfo() != null) responseHandler.setInfo(serverResponse.getInfo());
