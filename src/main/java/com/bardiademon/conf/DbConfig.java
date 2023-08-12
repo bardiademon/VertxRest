@@ -3,6 +3,8 @@ package com.bardiademon.conf;
 import com.google.gson.annotations.SerializedName;
 import lombok.Builder;
 
+import java.io.Serializable;
+
 @Builder
 public record DbConfig
         (
@@ -12,5 +14,5 @@ public record DbConfig
                 String password ,
                 @SerializedName("driver_class") String driverClass ,
                 String url
-        ) {
+        )  implements Serializable {
 }

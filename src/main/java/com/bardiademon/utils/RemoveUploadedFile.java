@@ -25,7 +25,7 @@ public final class RemoveUploadedFile {
             try {
                 final List<FileUpload> fileUploads = routingContext.fileUploads();
 
-                if (fileUploads.size() > 0) {
+                if (!fileUploads.isEmpty()) {
                     for (final FileUpload fileUpload : fileUploads) {
                         final File file = new File(fileUpload.uploadedFileName());
                         if (file.exists()) {

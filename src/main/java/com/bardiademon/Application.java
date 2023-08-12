@@ -160,12 +160,13 @@ public final class Application extends AbstractVerticle {
 
         final Promise<JWTAuth> promise = Promise.promise();
 
-        final URL resource = getResource("pem/private_key.pem");
+        final URL resource = getResource(config.signInJwtConfig().privateKey());
         if (resource != null) {
             final Buffer privateKey = vertx.fileSystem().readFileBlocking(resource.getFile());
-
-            final JWTAuth jwt = JWTAuth.create(vertx , new JWTAuthOptions().addPubSecKey(new PubSecKeyOptions().setAlgorithm("HS256")
-                    .setBuffer(privateKey)));
+            final JWTAuth jwt = JWTAuth.create(vertx , new JWTAuthOptions()
+                    .addPubSecKey(new PubSecKeyOptions()
+                            .setAlgorithm(config.signInJwtConfig().algorithm())
+                            .setBuffer(privateKey)));
             promise.complete(jwt);
         } else promise.fail(new Exception("Jwt config error"));
 

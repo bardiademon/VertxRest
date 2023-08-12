@@ -120,41 +120,43 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
                     logger.error("Fail to get body");
                     promise.fail(new Throwable("Fail to get body"));
                     badRequest();
-                } else {
-                    final JsonObject bodyJson;
-                    try {
-                        bodyJson = new JsonObject(body.asString());
-
-                        request = (REQUEST) DtoMapper.toDto(bodyJson , rest.dto());
-                        logger.trace("Successfully mapping request: {}" , request);
-
-                        final Class<?>[] validator = rest.validator();
-                        if (validator != null && validator.length > 0) {
-                            try {
-                                for (final Class<?> clazz : validator) {
-                                    final Validation<REQUEST> validation = (Validation<REQUEST>) clazz.getConstructor().newInstance();
-                                    validation.validation(request);
-                                }
-                            } catch (ResponseException e) {
-                                logger.error("Fail to validation" , e);
-                                fail(new ServerResponse<>(e.response));
-                                return promise.future();
-                            } catch (Exception e) {
-                                logger.error("Fail to validation" , e);
-                                badRequest();
-                                promise.fail(e);
-                                return promise.future();
-                            }
-                        }
-
-                        promise.complete();
-
-                    } catch (Exception e) {
-                        logger.error("Fail to body string to json: {}" , body.toString());
-                        promise.fail(e);
-                        badRequest();
-                    }
+                    return promise.future();
                 }
+
+                final JsonObject bodyJson;
+                try {
+                    bodyJson = new JsonObject(body.asString());
+
+                    request = (REQUEST) DtoMapper.toDto(bodyJson , rest.dto());
+                    logger.trace("Successfully mapping request: {}" , request);
+
+                    final Class<?>[] validator = rest.validator();
+                    if (validator != null && validator.length > 0) {
+                        try {
+                            for (final Class<?> clazz : validator) {
+                                final Validation<REQUEST> validation = (Validation<REQUEST>) clazz.getConstructor().newInstance();
+                                validation.validation(request);
+                            }
+                        } catch (ResponseException e) {
+                            logger.error("Fail to validation" , e);
+                            fail(new ServerResponse<>(e.response));
+                            return promise.future();
+                        } catch (Exception e) {
+                            logger.error("Fail to validation" , e);
+                            badRequest();
+                            promise.fail(e);
+                            return promise.future();
+                        }
+                    }
+
+                    promise.complete();
+
+                } catch (Exception e) {
+                    logger.error("Fail to body string to json: {}" , body.toString());
+                    promise.fail(e);
+                    badRequest();
+                }
+
             } catch (Exception e) {
                 logger.error("Fail to request handler" , e);
                 promise.fail(e);
@@ -180,7 +182,7 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
             return promise.future();
         }
 
-        final String authentication = routingContext.request().getHeader("authentication");
+        final String authentication = routingContext.request().getHeader(Application.getConfig().signInJwtConfig().headerName());
 
         if (authentication == null || authentication.trim().isEmpty()) {
             promise.fail(new ResponseException(Response.FAIL_AUTHENTICATION));
@@ -194,12 +196,19 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
         }
 
         final String token = authenticationSplit[1].trim();
-        Application.jwt.authenticate(new JsonObject().put("token" , token)).onSuccess(user -> {
+
+        Application.jwt.authenticate(() -> new JsonObject().put("token" , token)).onSuccess(user -> {
 
             try {
+                if (user.expired()) {
+                    logger.error("Expired token: {}" , user);
+                    promise.fail(new ResponseException(Response.FAIL_AUTHENTICATION));
+                    return;
+                }
+
                 logger.info("Successfully authenticate: {}" , user);
 
-                final long id = Long.parseLong(user.get("user_id").toString());
+                final long id = user.get("user_id");
 
                 userRepository.fetchUserById(sqlConnection , id).onSuccess(userEntity -> {
 
@@ -254,10 +263,6 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
 
             logger.info("Successfully close vertx");
         });
-    }
-
-    private void end() {
-        closeVertx();
     }
 
     private Future<SQLConnection> connectDbResponse() {

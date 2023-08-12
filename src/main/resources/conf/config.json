@@ -10,6 +10,15 @@
       "router": "/static/*"
     }
   },
+  "sign_in_jwt": {
+    "subject": "sign-in",
+    "issuer": "bardiademon",
+    "ignore_expiration": false,
+    "expires_in_minutes": 1440,
+    "algorithm": "ES256",
+    "private_key": "pem/private_key.pem",
+    "header_name": "authentication"
+  },
   "database": {
     "host": "127.0.0.1",
     "port": "5432",
