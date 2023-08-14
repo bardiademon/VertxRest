@@ -11,7 +11,7 @@
 @Rest(method = RequestMethod.POST, path = {"/tst" , "/test"}, db = false, dto = TestDto.class, validator = TestValidation.class)
 public final class TestRest extends RestController<TestDto, String> {
     @Override
-    public void restHandler(final Handler<TestDto, String> restHandler) throws Exception {
+    public void handler(final RestHandler<TestDto, String> restHandler) throws Exception {
         restHandler.success(Response.TEST);
     }
 }
