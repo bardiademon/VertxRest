@@ -12,6 +12,8 @@ public record SignInJwtConfig
                 @SerializedName("expires_in_minutes") int expiresInMinutes ,
                 String algorithm ,
                 @SerializedName("private_key") String privateKey ,
-                @SerializedName("header_name") String headerName
+                @SerializedName("public_key") String publicKey ,
+                @SerializedName("header_name") String headerName ,
+                @SerializedName("claims_user_id_key") String claimsUserIdKey
         ) implements Serializable {
 }

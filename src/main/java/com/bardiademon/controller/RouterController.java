@@ -1,6 +1,10 @@
 package com.bardiademon.controller;
 
-import com.bardiademon.Application;
+import com.bardiademon.controller.annotation.NonSingleton;
+import com.bardiademon.controller.annotation.Rest;
+import com.bardiademon.controller.handler.RestHandler;
+import com.bardiademon.controller.handler.JwtHandler;
+import com.bardiademon.controller.handler.ResponseHandler;
 import com.bardiademon.data.Model.ServerResponse;
 import com.bardiademon.data.dto.NothingDto;
 import com.bardiademon.data.entity.UserEntity;
@@ -21,10 +25,11 @@ import io.vertx.ext.web.RoutingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
-import java.util.Set;
+import java.util.*;
 
-public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle implements Handler<REQUEST, RESPONSE> {
+public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle implements RestHandler<REQUEST, RESPONSE> {
+
+    private static final Map<String, Validation<?>> validations = new HashMap<>();
 
     private final static Logger logger = LogManager.getLogger(RouterController.class);
     private final RoutingContext routingContext;
@@ -39,7 +44,7 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
     private RouterController(final RoutingContext routingContext , final RestController<REQUEST, RESPONSE> routerRestController , final Rest rest) {
         this.routingContext = routingContext;
         this.routerRestController = routerRestController;
-        userRepository = new UserService();
+        this.userRepository = new UserService();
         this.rest = rest;
     }
 
@@ -134,7 +139,17 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
                     if (validator != null && validator.length > 0) {
                         try {
                             for (final Class<?> clazz : validator) {
-                                final Validation<REQUEST> validation = (Validation<REQUEST>) clazz.getConstructor().newInstance();
+                                final Validation<REQUEST> validation;
+                                if (clazz.getAnnotation(NonSingleton.class) == null) {
+                                    if (validations.containsKey(clazz.getName())) {
+                                        validation = (Validation<REQUEST>) validations.get(clazz.getName());
+                                    } else {
+                                        validation = (Validation<REQUEST>) clazz.getConstructor().newInstance();
+                                        validations.put(clazz.getName() , validation);
+                                    }
+                                } else {
+                                    validation = (Validation<REQUEST>) clazz.getConstructor().newInstance();
+                                }
                                 validation.validation(request);
                             }
                         } catch (ResponseException e) {
@@ -182,7 +197,7 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
             return promise.future();
         }
 
-        final String authentication = routingContext.request().getHeader(Application.getConfig().signInJwtConfig().headerName());
+        final String authentication = routingContext.request().getHeader(ServerController.getConfig().signInJwtConfig().headerName());
 
         if (authentication == null || authentication.trim().isEmpty()) {
             promise.fail(new ResponseException(Response.FAIL_AUTHENTICATION));
@@ -196,9 +211,7 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
         }
 
         final String token = authenticationSplit[1].trim();
-
-        Application.jwt.authenticate(() -> new JsonObject().put("token" , token)).onSuccess(user -> {
-
+        JwtHandler.getJwtHandler().authenticate(token).onSuccess(user -> {
             try {
                 if (user.expired()) {
                     logger.error("Expired token: {}" , user);
@@ -208,7 +221,7 @@ public final class RouterController<REQUEST, RESPONSE> extends AbstractVerticle 
 
                 logger.info("Successfully authenticate: {}" , user);
 
-                final long id = user.get("user_id");
+                final long id = user.principal().getLong(ServerController.getConfig().signInJwtConfig().claimsUserIdKey());
 
                 userRepository.fetchUserById(sqlConnection , id).onSuccess(userEntity -> {
 

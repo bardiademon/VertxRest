@@ -5,6 +5,7 @@ import com.bardiademon.data.enums.Response;
 import com.bardiademon.data.excp.ResponseException;
 
 public final class SignInValidation extends Validation<SignInDto> {
+
     @Override
     public void validation(final SignInDto signInDto) throws ResponseException {
         initial(signInDto);
@@ -20,6 +21,5 @@ public final class SignInValidation extends Validation<SignInDto> {
         }
 
         logger.trace("Successfully validation sing in dto: {}" , signInDto);
-
     }
 }

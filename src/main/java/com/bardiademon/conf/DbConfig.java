@@ -14,5 +14,5 @@ public record DbConfig
                 String password ,
                 @SerializedName("driver_class") String driverClass ,
                 String url
-        )  implements Serializable {
+        ) implements Serializable {
 }

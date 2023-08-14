@@ -1,4 +1,4 @@
-package com.bardiademon.controller;
+package com.bardiademon.controller.annotation;
 
 import com.bardiademon.data.dto.NothingDto;
 import com.bardiademon.data.enums.RequestMethod;

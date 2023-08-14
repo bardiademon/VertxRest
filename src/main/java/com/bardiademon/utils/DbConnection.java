@@ -1,7 +1,7 @@
 package com.bardiademon.utils;
 
-import com.bardiademon.Application;
 import com.bardiademon.conf.DbConfig;
+import com.bardiademon.controller.ServerController;
 import com.bardiademon.data.enums.Response;
 import com.bardiademon.data.excp.ResponseException;
 import io.vertx.core.Future;
@@ -19,7 +19,7 @@ public final class DbConnection {
     public static Future<SQLConnection> connect(final Vertx vertx) {
         final Promise<SQLConnection> promise = Promise.promise();
 
-        final DbConfig config = Application.getConfig().dbConfig();
+        final DbConfig config = ServerController.getConfig().dbConfig();
 
         logger.info("Connecting to database...");
         logger.info("Set config info: {}" , config);

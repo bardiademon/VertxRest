@@ -1,6 +1,6 @@
-package com.bardiademon.controller;
+package com.bardiademon.controller.handler;
 
-import com.bardiademon.Application;
+import com.bardiademon.controller.ServerController;
 import com.bardiademon.controller.adapter.*;
 import com.bardiademon.data.enums.DateTimeFormatPattern;
 import com.bardiademon.data.enums.Response;
@@ -76,7 +76,7 @@ public final class ResponseHandler<T> {
 
         logger.trace("Response: {}" , response);
 
-        Application.getConfig().responseHeader().keySet().forEach(key -> httpServerResponse.headers().add(key , Application.getConfig().responseHeader().get(key).getAsString()));
+        ServerController.getConfig().responseHeader().keySet().forEach(key -> httpServerResponse.headers().add(key , ServerController.getConfig().responseHeader().get(key).getAsString()));
         httpServerResponse.headers().add("Content-Type" , "application/json");
         httpServerResponse.headers().add("Content-Length" , String.valueOf(response.encode().length()));
 

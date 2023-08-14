@@ -1,4 +1,4 @@
-package com.bardiademon.controller;
+package com.bardiademon.controller.handler;
 
 import com.bardiademon.data.Model.ServerResponse;
 import com.bardiademon.data.entity.UserEntity;
@@ -7,7 +7,7 @@ import io.vertx.core.Vertx;
 import io.vertx.ext.sql.SQLConnection;
 import io.vertx.ext.web.RoutingContext;
 
-public interface Handler<REQUEST, RESPONSE> {
+public interface RestHandler<REQUEST, RESPONSE> {
     void fail(final Throwable throwable , final ServerResponse<RESPONSE> response);
 
     void fail(final Throwable throwable);

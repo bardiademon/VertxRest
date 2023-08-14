@@ -10,5 +10,5 @@ public record ServerConfig
                 int port ,
                 @SerializedName("rest_package") String restPackage ,
                 @SerializedName("static") StaticConfig statik
-        )  implements Serializable {
+        ) implements Serializable {
 }

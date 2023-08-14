@@ -15,9 +15,11 @@
     "issuer": "bardiademon",
     "ignore_expiration": false,
     "expires_in_minutes": 1440,
-    "algorithm": "ES256",
+    "algorithm": "HS256",
     "private_key": "pem/private_key.pem",
-    "header_name": "authentication"
+    "public_key": "pem/public.pem",
+    "header_name": "authentication",
+    "claims_user_id_key": "user_id"
   },
   "database": {
     "host": "127.0.0.1",

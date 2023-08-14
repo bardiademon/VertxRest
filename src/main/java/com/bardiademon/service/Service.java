@@ -7,12 +7,11 @@ import io.vertx.ext.sql.ResultSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Service extends RepositoryUtil {
+public abstract class Service extends RepositoryUtil {
 
     protected final Logger logger;
 
     protected Service() {
-        final Class<?> subclass = RestController.class.getDeclaringClass();
-        logger = LogManager.getLogger(subclass == null ? this : subclass);
+        logger = LogManager.getLogger(this);
     }
 }

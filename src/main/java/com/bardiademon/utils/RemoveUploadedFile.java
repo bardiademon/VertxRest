@@ -1,6 +1,6 @@
 package com.bardiademon.utils;
 
-import com.bardiademon.controller.ResponseHandler;
+import com.bardiademon.controller.handler.ResponseHandler;
 import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.logging.log4j.LogManager;

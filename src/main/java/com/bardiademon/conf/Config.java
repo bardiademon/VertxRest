@@ -3,6 +3,7 @@ package com.bardiademon.conf;
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 import lombok.Builder;
+import lombok.Getter;
 
 import java.io.Serializable;
 
@@ -13,5 +14,5 @@ public record Config
                 @SerializedName("server") ServerConfig serverConfig ,
                 @SerializedName("response_header") JsonObject responseHeader ,
                 @SerializedName("sign_in_jwt") SignInJwtConfig signInJwtConfig
-        )  implements Serializable {
+        ) implements Serializable {
 }
